@@ -1,0 +1,6 @@
+numpy
+pandas
+matplotlib
+quadpy
+pyqt5
+qdarkstyle
