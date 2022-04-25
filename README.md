@@ -1,4 +1,4 @@
-SPHERE-OB Airborne EM modelling 
+Sphereob Airborne EM modelling 
 ====
 
 SPHERE-OB (sphere-overburden) is a python program developed to calculate and plot the airborne TDEM response of a sphere or ‘dipping sphere’ underlying conductive overburden. 
@@ -7,7 +7,7 @@ The response is calculated using the semi-analytic solution set presented in Des
 Installation
 ====
 
-SPHERE-OB can be installed with pip + git using::
+Sphereob can be installed with pip + git using::
 
 	pip install git+https://github.com/adzamper71/SPHEREOB
 
