@@ -32,7 +32,7 @@ Getting Started
 
 Once installed, the GUI can be launched from the command line as::
 
-	SPHEREOB
+	sphereob
 
 The program will launch and the user can now begin plotting airborne EM responses for varying survey configurations and geologic models.
 
