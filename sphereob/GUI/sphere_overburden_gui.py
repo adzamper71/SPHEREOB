@@ -43,7 +43,7 @@ class OptionsMenu(QtWidgets.QWidget):
         self.tx.setText('0,0,60')
 
         self.rx = QtWidgets.QLineEdit()
-        self.tx.setText('0,0,1')
+        self.tx.setText('0,0,120')
 
         self.txrx = QtWidgets.QLineEdit()
         self.txrx.setText('12.5,0,56')
@@ -81,14 +81,18 @@ class OptionsMenu(QtWidgets.QWidget):
             if widget == self.sigma_ob_sb:
                 widget.setRange(0, 10000)
                 widget.setDecimals(2)
+            if widget == self.sigma_sp_sb:
+                widget.setRange(0, 10000)
+                widget.setDecimals(2)
+                widget.setSingleStep(0.1)
 
 
 
 
         coeff_grid = QtWidgets.QGridLayout()
-        coeff_grid.addWidget(QtWidgets.QLabel('Receiver Position(m)'), 0, 0)
+        coeff_grid.addWidget(QtWidgets.QLabel('Transmitter Position(m)'), 0, 0)
         coeff_grid.addWidget(self.tx, 0, 1)
-        coeff_grid.addWidget(QtWidgets.QLabel('Transmitter Position(m)'), 1, 0)
+        coeff_grid.addWidget(QtWidgets.QLabel('Tx-Rx Offset (m)'), 1, 0)
         coeff_grid.addWidget(self.txrx, 1, 1)
         coeff_grid.addWidget(QtWidgets.QLabel('Overburden Conductivity (S/m)'), 2, 0)
         coeff_grid.addWidget(self.sigma_ob_sb, 2, 1)
@@ -192,16 +196,21 @@ class OptionsMenu(QtWidgets.QWidget):
         self.BF = QtWidgets.QCheckBox('B Field')
         self.BF.setChecked(False)
 
+        self.ChannelBox = QtWidgets.QComboBox()
+        ChannelList = ['All channels', 'Early channels', 'Mid channels', 'Late channels']
+        self.ChannelBox.addItems(ChannelList)
+        #self.windows_label = QtWidgets.QLabel('Select time windows to be plotted', self)
 
-
-
-        self.plot_container =  QtWidgets.QGridLayout()
+        self.plot_container = QtWidgets.QGridLayout()
+        #self.plot_container.addWidget(self.windows_label)
+        self.plot_container.addWidget(self.ChannelBox)
         self.plot_container.addWidget(self.plotSphere)
-        self.plot_container.addWidget(self.plotImport)
         self.plot_container.addWidget(self.scaleLinear)
+        self.plot_container.addWidget(self.plotImport,1,1)
+        self.plot_container.addWidget(self.ChannelBox, 0,0)
         self.plot_container.addWidget(self.scaleLog,2,1)
-        self.plot_container.addWidget(self.dBdT,2,5)
-        self.plot_container.addWidget(self.BF,2,9)
+        #self.plot_container.addWidget(self.dBdT,2,5)
+        #self.plot_container.addWidget(self.BF,2,9)
         self.plot_container.addLayout(self.graph_box,6,0,1,20)
         self.graph_gb.setLayout(self.plot_container)
 
@@ -221,18 +230,21 @@ class OptionsMenu(QtWidgets.QWidget):
 
         self.lineBox = QtWidgets.QComboBox()
         self.slider_label = QtWidgets.QLabel('Select Line to be plotted', self)
-        self.windows_label = QtWidgets.QLabel('Select time windows to be plotted', self)
+
+
 
         other_grid.addWidget(self.slider_label)
         other_grid.addWidget(self.read_tem_btn)
         other_grid.addWidget(self.lineBox)
         self.window_box = QtWidgets.QHBoxLayout()
-        self.window_box.addWidget(self.alltime)
-        self.window_box.addWidget(self.earlytime)
-        self.window_box.addWidget(self.midtime)
-        self.window_box.addWidget(self.latetime)
-        other_grid.addLayout(self.window_box,4,0)
-        other_grid.addWidget(self.windows_label,3,0)
+        self.window_box.addWidget(self.ChannelBox)
+        # self.window_box.addWidget(self.earlytime)
+        # self.window_box.addWidget(self.midtime)
+        # self.window_box.addWidget(self.latetime)
+        # other_grid.addLayout(self.window_box,4,0)
+        # other_grid.addWidget(self.windows_label,3,0)
+
+
 
 
 
@@ -418,14 +430,11 @@ class AppForm(QtWidgets.QMainWindow):
 
         # Create the exit application function in the menubar
 
-        # file_exit_action = QtWidgets.QAction('E&xit', self)
-        # file_exit_action.setToolTip('Exit')
-        # file_exit_action.setIcon(QtGui.QIcon(':/resources/door_open.png'))
-        # self.connect(
-        #     file_exit_action,
-        #     QtCore.pyqtSignal('triggered()'),
-        #     self.close,
-        # )
+        file_exit_action = QtWidgets.QAction('E&xit', self)
+        file_exit_action.setToolTip('Exit')
+        file_exit_action.setIcon(QtGui.QIcon(':/resources/door_open.png'))
+        file_exit_action.triggered.connect(self.close)
+
         #
         # about_action = QtWidgets.QAction('&About', self)
         # about_action.setToolTip('About')
@@ -440,10 +449,10 @@ class AppForm(QtWidgets.QMainWindow):
 
         file_menu = self.menuBar().addMenu('&File')
         # file_menu.addAction(file_preview_waveform)
-        # file_menu.addAction(file_exit_action)
-        file_menu = self.menuBar().addMenu('&Edit')
-        file_menu = self.menuBar().addMenu('&View')
-        help_menu = self.menuBar().addMenu('&Help')
+        file_menu.addAction(file_exit_action)
+        #file_menu = self.menuBar().addMenu('&Edit')
+        #file_menu = self.menuBar().addMenu('&View')
+        #help_menu = self.menuBar().addMenu('&Help')
         # help_menu.addAction(about_action)
 
     def readCSV(self):
@@ -501,44 +510,84 @@ class AppForm(QtWidgets.QMainWindow):
             This will be rewritten more efficiently 
         """
 
-        if (
-                self.options_menu.sphere_z.isChecked() and self.options_menu.sphere_x.isChecked()) and self.options_menu.sphere_y.isChecked():
+        if (self.options_menu.sphere_z.isChecked() and self.options_menu.sphere_x.isChecked()) and self.options_menu.sphere_y.isChecked():
 
             self.axes = self.fig.add_subplot(3, 1, 1)
-            x = sphere.H_tot_x
-            i = 0
-            while i < len(sphere.H_tot_x):
+
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw)/3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw)/3)
+                stop = ((sphere.nw)/3) + ((sphere.nw)/3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            i = int(start)
+            while i >= start and i<= stop -1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[i],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 i += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('x-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
-
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.axes = self.fig.add_subplot(3, 1, 2)
-            z = sphere.H_tot_z
-            k = 0
-            while k < len(sphere.H_tot_z):
+
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k <= stop - 1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[k],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 k += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('z-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.axes = self.fig.add_subplot(3, 1, 3)
-            y = sphere.H_tot_y
-            i = 0
-            while i < len(sphere.H_tot_y):
-                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[i],
+
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            j = int(start)
+            while j >= start and j <= stop - 1:
+                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[j],
                                color='0.4')  # will have to change x axis for changing param
-                i += 1
+                j += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('y-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.canvas.draw()
 
@@ -547,28 +596,54 @@ class AppForm(QtWidgets.QMainWindow):
         elif self.options_menu.sphere_z.isChecked() and self.options_menu.sphere_x.isChecked() and self.options_menu.sphere_y.isChecked() == False:
 
             self.axes = self.fig.add_subplot(2, 1, 1)
-            x = sphere.H_tot_x
-            i = 0
-            while i < len(sphere.H_tot_x):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw)/3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw)/3)
+                stop = ((sphere.nw)/3) + ((sphere.nw)/3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            i = int(start)
+            while i >= start and i<= stop -1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[i],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 i += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('x-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.axes = self.fig.add_subplot(2, 1, 2)
-            z = sphere.H_tot_z
-            k = 0
-            while k < len(sphere.H_tot_z):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw)/3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw)/3)
+                stop = ((sphere.nw)/3) + ((sphere.nw)/3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k<= stop -1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[k],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 k += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('z-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.canvas.draw()
 
@@ -599,7 +674,75 @@ class AppForm(QtWidgets.QMainWindow):
             ycomp = profile_data[profile_data.index % 3 == 1].values
             zcomp = profile_data[profile_data.index % 3 == 2].values
             x_axis = np.unique(line_data['EAST'].values)
-            zed = zcomp.astype(float)
+            profile = x_axis.astype(float)
+
+            temprofile = []
+            if self.options_menu.sphere_z.isChecked() == True:
+                temprofile = zcomp
+            if self.options_menu.sphere_x.isChecked() == True:
+                temprofile = xcompy
+            if self.options_menu.sphere_y.isChecked() == True:
+                temprofile = ycomp
+
+            windows = len(np.transpose(temprofile))
+            tran = np.transpose(temprofile)
+            j = 0
+
+            while j < windows:
+                self.axes.plot(profile.astype(int), np.transpose(temprofile.astype(float))[j],color = "red")
+                j += 1
+
+            self.axes.set_xlabel('Profile (m)')
+            self.axes.set_ylabel('Response (pT)')
+            self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
+
+            self.axes = self.fig.add_subplot(2, 1, 2)
+            z = sphere.H_tot_z
+            k = 0
+            while k < len(sphere.H_tot_z):
+                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[k],
+                               color='0.4')  # will have to change x axis for changing param
+                k += 1
+
+            self.axes.set_xlabel('Profile (m)')
+            self.axes.set_ylabel('z-component (A/m)')
+            self.axes.grid(True, which='both', ls='-')
+
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
+
+            self.canvas.draw()
+
+
+
+        elif self.options_menu.sphere_x.isChecked() and self.options_menu.plotSphere.isChecked() and self.options_menu.plotImport.isChecked():
+
+            self.axes = self.fig.add_subplot(2, 1, 1)
+            lines = self.options_menu.TEM.NORTH.unique()
+            num_lines = len(lines)
+            line_values = np.arange(num_lines)
+
+            line = []
+
+            d = dict(zip(lines, line_values))
+
+            for x in lines:
+                start_line = self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index[0]
+                stations = len(self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index)
+                end_line = self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index[stations - 1]
+                line.append(tuple([start_line, end_line]))
+
+            line_input = str(self.options_menu.lineBox.currentText())
+
+            line_data = self.options_menu.TEM.loc[line[d.get(line_input)][0]:line[d.get(line_input)][1]]
+            profile_data = line_data.drop(columns=['EAST', 'NORTH', 'LEVEL', 'STATION', 'COMPONENT'])
+
+            xcompy = profile_data[profile_data.index % 3 == 0].values
+            ycomp = profile_data[profile_data.index % 3 == 1].values
+            zcomp = profile_data[profile_data.index % 3 == 2].values
+            x_axis = np.unique(line_data['EAST'].values)
             profile = x_axis.astype(float)
 
             temprofile = []
@@ -622,41 +765,79 @@ class AppForm(QtWidgets.QMainWindow):
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('Response (pT)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.axes = self.fig.add_subplot(2, 1, 2)
-            z = sphere.H_tot_z
+            x = sphere.H_tot_x
             k = 0
-            while k < len(sphere.H_tot_z):
-                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[k],
+            while k < len(sphere.H_tot_x):
+                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[k],
                                color='0.4')  # will have to change x axis for changing param
                 k += 1
 
             self.axes.set_xlabel('Profile (m)')
-            self.axes.set_ylabel('z-component (A/m)')
+            self.axes.set_ylabel('x-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.canvas.draw()
 
-
-        elif self.options_menu.sphere_z.isChecked() == False and self.options_menu.sphere_x.isChecked() and self.options_menu.sphere_y.isChecked():
+        elif self.options_menu.sphere_y.isChecked() and self.options_menu.plotSphere.isChecked() and self.options_menu.plotImport.isChecked():
 
             self.axes = self.fig.add_subplot(2, 1, 1)
-            x = sphere.H_tot_x
-            i = 0
-            while i < len(sphere.H_tot_x):
-                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[i],
-                               color='0.4')  # will have to change x axis for changing param
-                i += 1
+            lines = self.options_menu.TEM.NORTH.unique()
+            num_lines = len(lines)
+            line_values = np.arange(num_lines)
+
+            line = []
+
+            d = dict(zip(lines, line_values))
+
+            for x in lines:
+                start_line = self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index[0]
+                stations = len(self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index)
+                end_line = self.options_menu.TEM.loc[self.options_menu.TEM.NORTH == x].index[stations - 1]
+                line.append(tuple([start_line, end_line]))
+
+            line_input = str(self.options_menu.lineBox.currentText())
+
+            line_data = self.options_menu.TEM.loc[line[d.get(line_input)][0]:line[d.get(line_input)][1]]
+            profile_data = line_data.drop(columns=['EAST', 'NORTH', 'LEVEL', 'STATION', 'COMPONENT'])
+
+            xcompy = profile_data[profile_data.index % 3 == 0].values
+            ycomp = profile_data[profile_data.index % 3 == 1].values
+            zcomp = profile_data[profile_data.index % 3 == 2].values
+            x_axis = np.unique(line_data['EAST'].values)
+            profile = x_axis.astype(float)
+
+            temprofile = []
+            if self.options_menu.sphere_z.isChecked() == True:
+                temprofile = zcomp
+            if self.options_menu.sphere_x.isChecked() == True:
+                temprofile = xcompy
+            if self.options_menu.sphere_y.isChecked() == True:
+                temprofile = ycomp
+
+            windows = len(np.transpose(temprofile))
+            tr = np.transpose(temprofile)
+            j = 0
+
+            while j < windows:
+                self.axes.plot(profile.astype(int), np.transpose(temprofile.astype(float))[j],color = "red")
+                j += 1
 
             self.axes.set_xlabel('Profile (m)')
-            self.axes.set_ylabel('x-component (A/m)')
+            self.axes.set_ylabel('Response (pT)')
             self.axes.grid(True, which='both', ls='-')
-            # the first subplot in the first figure
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.axes = self.fig.add_subplot(2, 1, 2)
             y = sphere.H_tot_y
             k = 0
-            while k < len(sphere.H_tot_z):
+            while k < len(sphere.H_tot_y):
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[k],
                                color='0.4')  # will have to change x axis for changing param
                 k += 1
@@ -664,52 +845,150 @@ class AppForm(QtWidgets.QMainWindow):
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('y-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
-            # self.canvas.addWidget(self.navi_toolbar)
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
+
+            self.canvas.draw()
+
+
+        elif self.options_menu.sphere_z.isChecked() == False and self.options_menu.sphere_x.isChecked() and self.options_menu.sphere_y.isChecked(): #=False
+
+            self.axes = self.fig.add_subplot(2, 1, 1)
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw)/3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw)/3)
+                stop = ((sphere.nw)/3) + ((sphere.nw)/3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            i = int(start)
+            while i >= start and i<= stop -1:
+                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[i],
+                               color='0.4')  # will have to change x axis for changing param
+                i += 1
+
+            self.axes.set_xlabel('Profile (m)')
+            self.axes.set_ylabel('x-component (A/m)')
+            self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
+            # the first subplot in the first figure
+
+            self.axes = self.fig.add_subplot(2, 1, 2)
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k <= stop - 1:
+                self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[k],
+                               color='0.4')  # will have to change x axis for changing param
+                k += 1
+
+            self.axes.set_xlabel('Profile (m)')
+            self.axes.set_ylabel('y-component (A/m)')
+            self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.canvas.draw()
         elif self.options_menu.sphere_z.isChecked() and self.options_menu.sphere_x.isChecked() == False and self.options_menu.sphere_y.isChecked():
 
             self.axes = self.fig.add_subplot(2, 1, 1)
-            z = sphere.H_tot_z
-            i = 0
-            while i < len(sphere.H_tot_x):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            i = int(start)
+            while i >= start and i <= stop - 1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[i],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 i += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('z-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.axes = self.fig.add_subplot(2, 1, 2)
-            y = sphere.H_tot_y
-            k = 0
-            while k < len(sphere.H_tot_z):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw)/3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw)/3)
+                stop = ((sphere.nw)/3) + ((sphere.nw)/3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k<= stop -1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[k],
-                               color='0.4')  # will have to change x axis for changing param
+                               color='0.4')
                 k += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('y-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
 
             self.canvas.draw()
 
 
-        elif self.options_menu.sphere_x.isChecked() and self.options_menu.sphere_z.isChecked() == False and self.options_menu.sphere_y.isChecked() == False and self.options_menu.plotSphere.isChecked() == False:
+        elif self.options_menu.sphere_x.isChecked() and self.options_menu.sphere_z.isChecked() == False and self.options_menu.sphere_y.isChecked() == False and self.options_menu.plotSphere.isChecked():
 
             self.fig.clf()
             self.axes = self.fig.add_subplot(111)
-            x = sphere.H_tot_x
-            i = 0
-            while i < len(sphere.H_tot_x):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            i = int(start)
+            while i >= start and i <= stop - 1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_x[i],
                                color='0.4')  # will have to change x axis for changing param
                 i += 1
 
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('x-component (A/m)')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.canvas.draw()
 
         elif self.options_menu.plotImport.isChecked() and self.options_menu.plotSphere.isChecked() == False:
@@ -739,7 +1018,6 @@ class AppForm(QtWidgets.QMainWindow):
             ycomp = profile_data[profile_data.index % 3 == 1].values
             zcomp = profile_data[profile_data.index % 3 == 2].values
             x_axis = np.unique(line_data['EAST'].values)
-            zed = zcomp.astype(float)
             profile = x_axis.astype(float)
 
 
@@ -753,30 +1031,39 @@ class AppForm(QtWidgets.QMainWindow):
                 temprofile = ycomp
 
             windows = len(np.transpose(temprofile))
-            # z = zcomp.values
-            tran = np.transpose(temprofile)
+            tr= np.transpose(temprofile)
             j = 0
 
             while j < windows:
                 self.axes.plot(profile.astype(int), np.transpose(temprofile.astype(float))[j],color = "red")
                 j += 1
 
-            # ax.set_yscale('log')
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('Response (pT)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.canvas.draw()
-            a = 1
 
-            print(self.options_menu.TEM)
 
         elif self.options_menu.sphere_z.isChecked() and self.options_menu.sphere_x.isChecked() == False and self.options_menu.sphere_y.isChecked() == False:
 
             self.fig.clf()
             self.axes = self.fig.add_subplot(111)
-            z = sphere.H_tot_z
-            k = 0
-            while k < len(sphere.H_tot_z):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k <= stop - 1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_z[k],
                                color='0.4')  # will have to change x axis for changing param
                 k += 1
@@ -784,15 +1071,29 @@ class AppForm(QtWidgets.QMainWindow):
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('z-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.canvas.draw()
 
         elif self.options_menu.sphere_z.isChecked() == False and self.options_menu.sphere_x.isChecked() == False and self.options_menu.sphere_y.isChecked():
 
             self.fig.clf()
             self.axes = self.fig.add_subplot(111)
-            y = sphere.H_tot_y
-            k = 0
-            while k < len(sphere.H_tot_z):
+            if self.options_menu.ChannelBox.currentIndex() == 0:
+                start = 0
+                stop = len(sphere.H_tot_x)
+            elif self.options_menu.ChannelBox.currentIndex() == 3:
+                start = 0
+                stop = (sphere.nw) / 3
+            elif self.options_menu.ChannelBox.currentIndex() == 2:
+                start = ((sphere.nw) / 3)
+                stop = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+            elif self.options_menu.ChannelBox.currentIndex() == 1:
+                start = ((sphere.nw) / 3) + ((sphere.nw) / 3)
+                stop = sphere.nw
+            k = int(start)
+            while k >= start and k <= stop - 1:
                 self.axes.plot(np.linspace(sphere.profile[0][0], sphere.profile[0][100], 101), sphere.H_tot_y[k],
                                color='0.4')  # will have to change x axis for changing param
                 k += 1
@@ -800,6 +1101,8 @@ class AppForm(QtWidgets.QMainWindow):
             self.axes.set_xlabel('Profile (m)')
             self.axes.set_ylabel('y-component (A/m)')
             self.axes.grid(True, which='both', ls='-')
+            if self.options_menu.scaleLog.isChecked():
+                self.axes.set_yscale('log')
             self.canvas.draw()
 
         self.progressBar.setRange(0, 1)

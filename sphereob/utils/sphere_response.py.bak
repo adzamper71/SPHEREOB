@@ -11,6 +11,7 @@
 #imports
 import numpy as np
 import math
+import quadpy
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -21,7 +22,7 @@ class sphereresponse(object):
         self.dipole_m = 1847300  # dipole moment of tx
         self.rtx = np.array([0, 0, 120],dtype=np.int64)  # Tx co-ordinates in array
         self.radar = self.rtx[2]  # height of transmitter above ground surface=
-        self.offset_tx_rx = np.array([12.5, 0, 56],dtype=np.int64)  # offset from transmitter to receiver array
+        self.offset_tx_rx = np.array([125, 0, 56],dtype=np.int64)  # offset from transmitter to receiver array
 
         self.rrx = np.array([self.rtx[0] - self.offset_tx_rx[0], self.rtx[1] - self.offset_tx_rx[1],
                         self.rtx[2] - self.offset_tx_rx[2]],dtype=np.int64)  # receiver co-ordinate array
@@ -51,9 +52,9 @@ class sphereresponse(object):
 
         self.nw = len(self.wc)  # Number of windows
 
-        self.P = 3.65 * 1E-3  # Pulse length
+        self.P = 4.01 * 1E-3  # Pulse length
 
-        self.bfreq = 30  # Frequency of transmitter waveform
+        self.bfreq = 25  # Frequency of transmitter waveform
 
         self.T = 1 / self.bfreq  # Period
 
@@ -76,7 +77,6 @@ class sphereresponse(object):
         self.dip = 135  # Dip of sphere
         self.wave = 1
         self.windows = 1
-
 
 
 
@@ -455,7 +455,7 @@ class sphereresponse(object):
 
 
                 xfinal = H_tot_x + H_xyz[0]
-                zfinal = H_tot_z + H_xyz[1] # minus
+                zfinal = H_tot_z - H_xyz[1]
                 yfinal = H_tot_y + H_xyz[2]
 
 
@@ -516,7 +516,7 @@ class sphereresponse(object):
                                   t, self.mu, self.sigma_ob, self.thick_ob)
 
 
-                final_lst = np.array([H_tot_x + H_field[0], H_tot_z - H_field[1], H_tot_y + H_field[2]]) # + z?
+                final_lst = np.array([H_tot_x + H_field[0], H_tot_z + H_field[1], H_tot_y + H_field[2]])
 
                 return final_lst
 
