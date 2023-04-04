@@ -19,5 +19,6 @@ setup(name='sphereob',
                         'matplotlib',
                         'qdarkstyle',
                         'quadpy',
-                        'pyqt5'],
+                        'pyqt5',
+                       'orthopy'],
       include_package_data=True)
