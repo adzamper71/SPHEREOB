@@ -4,3 +4,4 @@ matplotlib
 quadpy
 pyqt5
 qdarkstyle
+orthopy
