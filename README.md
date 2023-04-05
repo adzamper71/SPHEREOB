@@ -7,7 +7,7 @@ The response is calculated using the semi-analytic solution set presented in Des
 Installation
 ====
 
-Sphereob can be installed with pip + git using::
+If python is installed on your system, Sphereob can be installed with pip + git by opening command prompt in administrator and using::
 
 	pip install git+https://github.com/adzamper71/SPHEREOB
 
