@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name='sphereob',
-      version='0.0.82',
+      version='0.0.81',
       description='GUI program to model the airborne EM response of a sphere underlying conductive overburden',
       url='https://github.com/adzamper71/SPHEREOB',
       author='Anthony Zamperoni',
