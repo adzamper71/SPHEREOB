@@ -1,7 +1,6 @@
 numpy
 pandas
 matplotlib
-quadpy
+scipy
 pyqt5
 qdarkstyle
-orthopy
